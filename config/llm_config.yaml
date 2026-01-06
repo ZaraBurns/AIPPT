@@ -1,0 +1,97 @@
+# LLM 配置文件
+# 支持多种 LLM 提供商：OpenAI, Qwen, DeepSeek, Zhipu, Anthropic 等
+
+providers:
+  # OpenAI 配置
+  openai:
+    name: "OpenAI"
+    base_url: "https://api.openai.com/v1"
+    default_model: "gpt-4o-mini"
+    description: "OpenAI GPT 模型"
+
+  # 阿里云通义千问配置
+  qwen:
+    name: "Qwen"
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    default_model: "qwen-turbo"
+    description: "阿里云通义千问"
+
+  # DeepSeek 配置
+  deepseek:
+    name: "DeepSeek"
+    base_url: "https://api.deepseek.com/v1"
+    default_model: "deepseek-chat"
+    description: "DeepSeek 模型"
+
+  # 智谱 AI 配置
+  zhipu:
+    name: "Zhipu"
+    base_url: "https://open.bigmodel.cn/api/paas/v4"
+    default_model: "glm-4"
+    description: "智谱 GLM 模型"
+
+# 默认配置
+default:
+  provider: "qwen"  # 默认使用 Qwen
+  model_name: "qwen-turbo"
+  temperature: 0.7
+  max_tokens: 4000
+  timeout: 60
+
+# 各个 Agent 的专用配置
+agents:
+  # 大纲生成器配置
+  outline_generator:
+    provider: "qwen"
+    model_name: "qwen-turbo"
+    temperature: 0.6
+    max_tokens: 3000
+    description: "PPT 大纲生成 - 需要逻辑清晰"
+
+  # 内容生成器配置
+  content_generator:
+    provider: "qwen"
+    model_name: "qwen-turbo"
+    temperature: 0.8
+    max_tokens: 6000
+    description: "页面内容生成 - 需要创意丰富"
+
+  # 设计协调器配置
+  design_coordinator:
+    provider: "qwen"
+    model_name: "qwen-turbo"
+    temperature: 0.5
+    max_tokens: 2000
+    description: "设计规范生成 - 需要稳定输出"
+
+  # 图片搜索关键词生成
+  image_query_generator:
+    provider: "qwen"
+    model_name: "qwen-turbo"
+    temperature: 0.7
+    max_tokens: 500
+    description: "图片搜索关键词生成"
+
+# 查询优化器配置
+query_optimizer:
+  provider: "qwen"
+  model_name: "qwen-turbo"
+  temperature: 0.3
+  max_tokens: 2000
+  description: "搜索查询优化"
+
+# 搜索分析器配置
+search_analyzer:
+  provider: "qwen"
+  model_name: "qwen-turbo"
+  temperature: 0.5
+  max_tokens: 4000
+  description: "搜索结果分析"
+
+# 内容合成器配置
+content_synthesizer:
+  provider: "qwen"
+  model_name: "qwen-turbo"
+  temperature: 0.7
+  max_tokens: 6000
+  description: "多源内容合成"

@@ -1,0 +1,123 @@
+1. **内容契合度要求**：
+   - 所有幻灯片内容必须与上述项目信息严格匹配，确保主题明确、风格统一、内容相关。
+   - 信息表达要专业可信，同时具有吸引力与传播力。
+
+2. **页面结构规范**：
+   - 必须包含以下结构：封面页（第1页，page_type: title）、内容页（page_type: content）、总结页（最后1页，page_type: conclusion）。
+   - 内容页应合理分层，逻辑清晰；封面和总结页需具备视觉冲击力或独特设计说明。
+
+3. **内容点控制**：
+   - 每页仅需包含主题（topic）和关键要点提示（key_points），key_points为2-4个关键词。
+   - 内容分布需均衡，避免信息堆积或重复。
+
+4. **图表展示**：
+   - 每个主章节内至少2-3页需标记为需要图表（has_chart: true），对适合可视化的信息，**建议并提供图表配置**，写入 `chart_config` 字段中。
+   - 需要表明数据来源（如"2024年IDC报告显示..."）
+   - 图表需明确类型（如柱状图、折线图、饼图、环形图、和弦图、关联图、瀑布图、条形图、面积图等）、说明含义、配置样式及数据结构。
+
+5. **图片配置规则**：
+   - 根据页面内容判断是否需要配图，且**每页图片最多不超过三张**：
+     - **需要配图的页面类型**：
+     概念解释页面（has_image: true, image_config: [{"type": "photo", "query": "相关概念英文关键词"}]）、
+     场景描述页面（has_image: true, image_config: [{"type": "photo", "query": "场景英文关键词"}]）、
+     产品介绍页面（has_image: true, image_config: [{"type": "photo", "query": "产品名称的英文描述"}]）、
+     案例展示页面（has_image: true, image_config: [{"type": "photo", "query": "案例相关的英文关键词"}]）
+     - **不需要配图的页面**：纯数据展示页面（重点是图表）、纯文字总结页面、目录页面
+   - 若页面需多张图片，image_config以数组形式包含多个图片配置对象，数量不超过3个，每个对象包含"type"和"query"字段，query为英文关键词描述。
+
+6. **语言风格与语境一致性**：
+   - 处理图片关键词使用英文，其他部分统一使用中文语言，保持语境一致，适合目标受众理解与接受。
+
+7. **配色设计要求**：
+   - 根据风格和主题设计专属配色方案，确保视觉协调统一。
+
+# 请以JSON格式输出：
+```JSON
+{
+  "title": "专业且吸引人的PPT标题",
+  "total_pages": "{slides}",
+  "subtitle": "",
+  "pages": [
+    {
+      "slide_number": 1,
+      "title": "页面标题",
+      "page_type": "title",
+      "key_points": [],
+      "has_chart": false,
+      "has_image": true,
+      "image_config": [{"type": "photo", "query": "产品名称的英文描述"}],
+      "description": "此页的简要说明与目的"
+    },
+    {
+      "slide_number": 2,
+      "title": "页面标题",
+      "page_type": "section",
+      "key_points": [],
+      "has_chart": false,
+      "has_image": false,
+      "description": "此页的简要说明与目的"
+    },
+    {
+      "slide_number": 3,
+      "title": "页面标题",
+      "page_type": "content",
+      "key_points": ["要点1", "要点2", "要点3..."],
+      "has_chart": true,
+      "chart_config": {
+        "type": "bar",
+        "data": {
+          "labels": ["示例A", "示例B", "示例C"],
+          "datasets": [
+            {
+              "label": "数据说明",
+              "data": [80, 95, 70],
+              "backgroundColor": ["#FF6B6B", "#4ECDC4", "#FFD93D"],
+              "borderColor": ["#FF5252", "#26A69A", "#F4A261"],
+              "borderWidth": 2
+            }
+          ]
+        },
+        "options": {
+          "responsive": true,
+          "plugins": {
+            "legend": {
+              "position": "top"
+            },
+            "title": {
+              "display": true,
+              "text": "图表标题"
+            }
+          },
+          "scales": {
+            "y": {
+              "beginAtZero": true
+            }
+          }
+        }
+      },
+      "has_image": false,
+      "description": "此页的简要说明与目的"
+    },
+    {
+      "slide_number": 4,
+      "title": "页面标题",
+      "page_type": "content",
+      "key_points": ["要点1", "要点2"],
+      "has_chart": false,
+      "has_image": true,
+      "image_config": [{"type": "photo", "query": "产品名称的英文描述"}],
+      "description": "此页的简要说明与目的"
+    },
+\\ 若干页...
+    {
+      "slide_number": "{slides}",
+      "page_type": "conclusion",
+      "title": "页面标题",
+      "key_points": ["要点1", "要点2", "要点3..."],
+      "has_chart": false,
+      "has_image": false,
+      "description": "此页的简要说明与目的"
+    }
+  ]
+}
+```
