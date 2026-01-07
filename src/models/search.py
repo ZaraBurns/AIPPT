@@ -1,6 +1,4 @@
-"""
-数据模型定义
-"""
+"""Search models"""
 
 from pydantic import BaseModel
 from typing import Optional

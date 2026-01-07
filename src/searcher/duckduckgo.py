@@ -7,7 +7,7 @@ from loguru import logger
 from urllib.parse import quote_plus
 
 from .base import BaseSearcher
-from ..models import SearchLink
+from ..models.search import SearchLink
 
 
 class DuckDuckGoSearcher(BaseSearcher):

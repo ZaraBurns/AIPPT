@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import List
 from playwright.async_api import Page
 
-from ..models import SearchLink
+from ..models.search import SearchLink
 
 
 class BaseSearcher(ABC):
