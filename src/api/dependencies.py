@@ -3,13 +3,14 @@
 提供FastAPI依赖项
 """
 from functools import lru_cache
-from typing import Annotated, Optional
+from typing import Annotated
 from fastapi import Depends
 from dotenv import load_dotenv
 import os
 
 from ..services.ppt_service import PPTService
 from ..services.conversion_service import ConversionService
+from ..services.file_service import FileService
 
 # 加载环境变量
 load_dotenv()
@@ -46,13 +47,18 @@ def get_conversion_service() -> ConversionService:
     )
 
 
+@lru_cache()
+def get_file_service() -> FileService:
+    """
+    获取文件服务实例（单例）
+
+    Returns:
+        FileService实例
+    """
+    return FileService(base_storage_dir="storage")
+
+
 # 类型别名，用于依赖注入
 PPTServiceDep = Annotated[PPTService, Depends(get_ppt_service)]
 ConversionServiceDep = Annotated[ConversionService, Depends(get_conversion_service)]
-
-
-# TODO: 后续添加FileService
-# async def get_file_service() -> FileService:
-#     ...
-#
-# FileServiceDep = Annotated[FileService, Depends(get_file_service)]
+FileServiceDep = Annotated[FileService, Depends(get_file_service)]

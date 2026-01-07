@@ -13,9 +13,10 @@ from ..schemas.ppt import (
     ProjectStatusResponse,
 )
 from ..schemas.common import APIResponse
-from ..dependencies import PPTServiceDep, ConversionServiceDep
+from ..dependencies import PPTServiceDep, ConversionServiceDep, FileServiceDep
 from loguru import logger
 from pathlib import Path
+from fastapi.responses import FileResponse
 
 router = APIRouter()
 
@@ -296,31 +297,57 @@ async def convert_to_pptx(
 @router.get(
     "/{project_id}/download/{file_type}",
     summary="下载文件",
-    description="下载PPT文件（HTML/PPTX）。（阶段4实现）"
+    description="下载PPT文件（HTML/PPTX/ZIP）"
 )
 async def download_file(
     project_id: str,
-    file_type: str
+    file_type: str,
+    file_service: FileServiceDep
 ):
     """
     下载文件
 
     支持下载：
-    - **html**: HTML演示文稿（ZIP）
     - **pptx**: PPTX文件
-    - **all**: 所有文件（ZIP）
+    - **html**: HTML导航页
+    - **all**: 所有文件（ZIP压缩包）
 
-    **注意**: 此接口将在阶段4实现
+    - **project_id**: 项目ID
+    - **file_type**: 文件类型（pptx/html/all）
     """
-    return JSONResponse(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        content={
-            "code": 501,
-            "message": "文件下载功能将在阶段4实现",
-            "data": {
-                "note": "请稍后，功能正在开发中",
-                "project_id": project_id,
-                "file_type": file_type
-            }
-        }
-    )
+    try:
+        logger.info(f"收到文件下载请求: {project_id} - {file_type}")
+
+        # 验证file_type
+        if file_type not in ["pptx", "html", "all"]:
+            from fastapi import HTTPException, status
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"不支持的文件类型: {file_type}。支持的类型: pptx, html, all"
+            )
+
+        # 根据类型返回文件
+        if file_type == "pptx":
+            return file_service.create_pptx_response(project_id)
+
+        elif file_type == "html":
+            return file_service.create_html_response(project_id)
+
+        elif file_type == "all":
+            return file_service.create_zip_response(
+                project_id=project_id,
+                include_pptx=True,
+                include_html=True
+            )
+
+    except Exception as e:
+        # 如果是HTTPException，直接抛出
+        if hasattr(e, "status_code"):
+            raise
+
+        # 其他异常返回错误响应
+        logger.error(f"文件下载失败: {e}")
+        return APIResponse.error(
+            message=f"文件下载失败: {str(e)}",
+            code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
