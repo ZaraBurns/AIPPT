@@ -10,18 +10,7 @@ import os
 
 from ..services.ppt_service import PPTService
 from ..services.file_service import FileService
-
-# 导入HTML2PPTXService
-try:
-    from script.html2pptx import HTML2PPTXService, ServiceConfig
-except ImportError:
-    # 如果导入失败，尝试相对导入
-    import sys
-    from pathlib import Path as PathLib
-    script_dir = PathLib(__file__).parent.parent / "script"
-    if str(script_dir) not in sys.path:
-        sys.path.insert(0, str(script_dir))
-    from html2pptx import HTML2PPTXService, ServiceConfig
+from ..services.html2pptx_service import HTML2PPTXService, ServiceConfig
 
 # 加载环境变量
 load_dotenv()
