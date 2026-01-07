@@ -19,4 +19,8 @@ dependencies = [
     "beautifulsoup4>=4.14.3",
     "lxml>=6.0.2",
     "instructor>=1.13.0",
+    # FastAPI相关依赖
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "python-multipart>=0.0.6",
 ]
