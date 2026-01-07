@@ -1,7 +1,7 @@
 """
 API数据模型
 """
-from .common import APIResponse, PaginatedResponse
+from .common import APIResponse
 from .ppt import (
     PPTOutlineRequest,
     PPTGenerateRequest,
@@ -14,7 +14,6 @@ from .ppt import (
 
 __all__ = [
     "APIResponse",
-    "PaginatedResponse",
     "PPTOutlineRequest",
     "PPTGenerateRequest",
     "PPTOutlineResponse",
