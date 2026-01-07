@@ -2,6 +2,7 @@
 PPT相关API路由
 提供PPT生成、转换、下载等接口
 """
+import asyncio
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 
@@ -13,7 +14,7 @@ from ..schemas.ppt import (
     ProjectStatusResponse,
 )
 from ..schemas.common import APIResponse
-from ..dependencies import PPTServiceDep, ConversionServiceDep, FileServiceDep
+from ..dependencies import PPTServiceDep, HTML2PPTXServiceDep, FileServiceDep
 from loguru import logger
 from pathlib import Path
 from fastapi.responses import FileResponse
@@ -64,6 +65,35 @@ async def generate_outline(
         )
 
 
+async def _convert_html_to_pptx(html_folder: Path, output_pptx: Path, html2pptx_service):
+    """
+    异步转换HTML到PPTX
+
+    Args:
+        html_folder: HTML文件夹路径
+        output_pptx: 输出PPTX文件路径
+        html2pptx_service: HTML2PPTXService实例
+
+    Returns:
+        转换结果字典
+    """
+    loop = asyncio.get_event_loop()
+    stats = await loop.run_in_executor(
+        None,
+        html2pptx_service.convert_folder,
+        str(html_folder),
+        str(output_pptx)
+    )
+
+    return {
+        "total": stats.total,
+        "success": stats.success,
+        "failed": stats.failed,
+        "elapsed_time": stats.elapsed_time,
+        "total_tokens": stats.total_tokens.total_tokens
+    }
+
+
 @router.post(
     "/generate",
     response_model=APIResponse,
@@ -73,7 +103,7 @@ async def generate_outline(
 async def generate_ppt(
     request: PPTGenerateRequest,
     ppt_service: PPTServiceDep,
-    conversion_service: ConversionServiceDep = None
+    html2pptx_service: HTML2PPTXServiceDep = None
 ):
     """
     生成完整PPT（HTML + 可选PPTX）
@@ -113,32 +143,27 @@ async def generate_ppt(
         }
 
         # 如果需要转换PPTX
-        if request.convert_to_pptx and conversion_service:
+        if request.convert_to_pptx and html2pptx_service:
             logger.info(f"开始自动转换PPTX: {project_info.project_id}")
 
             try:
                 # 获取项目目录
                 project_dir = ppt_service.get_project_dir(project_info.project_id)
+                html_folder = project_dir / "reports" / "ppt" / "slides"
+                output_pptx = project_dir / "reports" / "ppt" / "output.pptx"
 
-                # 自动转换
-                task = await conversion_service.auto_convert_after_generation(
-                    project_id=project_info.project_id,
-                    project_dir=project_dir
-                )
+                # 执行转换
+                stats = await _convert_html_to_pptx(html_folder, output_pptx, html2pptx_service)
 
-                if task and task.status == "completed":
-                    result["pptx_file"] = task.pptx_path
-                    result["conversion_stats"] = task.stats
-                    logger.info(f"✅ PPTX自动转换成功: {task.pptx_path}")
-                else:
-                    result["pptx_error"] = task.error if task else "转换服务未初始化"
-                    logger.warning(f"PPTX转换失败: {result.get('pptx_error')}")
+                result["pptx_file"] = str(output_pptx)
+                result["conversion_stats"] = stats
+                logger.info(f"✅ PPTX自动转换成功: {output_pptx}")
 
             except Exception as e:
                 result["pptx_error"] = str(e)
                 logger.error(f"PPTX自动转换异常: {e}")
                 # PPTX转换失败不影响整体响应
-        elif request.convert_to_pptx and not conversion_service:
+        elif request.convert_to_pptx and not html2pptx_service:
             result["pptx_note"] = "转换服务未初始化"
 
         return APIResponse.success(
@@ -209,7 +234,8 @@ async def convert_to_pptx(
     project_id: str,
     enable_llm_fix: bool = True,
     ppt_service: PPTServiceDep = None,
-    conversion_service: ConversionServiceDep = None
+    html2pptx_service: HTML2PPTXServiceDep = None,
+    file_service: FileServiceDep = None
 ):
     """
     转换为PPTX
@@ -217,9 +243,9 @@ async def convert_to_pptx(
     将已生成的HTML演示文稿转换为PPTX格式。
 
     - **project_id**: 项目ID
-    - **enable_llm_fix**: 是否启用LLM修复（默认True）
+    - **enable_llm_fix**: 是否启用LLM修复（默认True，已由配置管理）
 
-    返回转换任务信息，包括任务ID、状态、PPTX路径和统计信息。
+    返回转换结果信息，包括状态、PPTX路径和统计信息。
     """
     try:
         logger.info(f"收到PPTX转换请求: {project_id}")
@@ -239,14 +265,13 @@ async def convert_to_pptx(
             )
 
         # 检查是否已有PPTX文件
-        existing_pptx = conversion_service.get_project_pptx_path(project_id)
-        if existing_pptx and existing_pptx.exists():
-            logger.info(f"PPTX文件已存在: {existing_pptx}")
+        output_pptx = project_dir / "reports" / "ppt" / "output.pptx"
+        if output_pptx.exists():
+            logger.info(f"PPTX文件已存在: {output_pptx}")
             return APIResponse.success(
                 data={
-                    "task_id": "existing",
                     "status": "completed",
-                    "pptx_path": str(existing_pptx),
+                    "pptx_path": str(output_pptx),
                     "conversion_stats": {
                         "note": "使用已存在的PPTX文件"
                     }
@@ -254,37 +279,21 @@ async def convert_to_pptx(
                 message="PPTX文件已存在"
             )
 
-        # 设置输出路径
-        output_pptx = project_dir / "reports" / "ppt" / "output.pptx"
-
         # 执行转换
-        task = await conversion_service.convert_to_pptx(
-            project_id=project_id,
-            html_folder=html_folder,
-            output_pptx=output_pptx
-        )
+        stats = await _convert_html_to_pptx(html_folder, output_pptx, html2pptx_service)
 
         # 构建响应
         result = {
-            "task_id": task.task_id,
-            "status": task.status,
-            "pptx_path": task.pptx_path,
-            "conversion_stats": task.stats
+            "status": "completed",
+            "pptx_path": str(output_pptx),
+            "conversion_stats": stats
         }
 
-        if task.status == "completed":
-            logger.info(f"✅ PPTX转换成功: {task.task_id}")
-            return APIResponse.success(
-                data=result,
-                message="PPTX转换成功"
-            )
-        else:
-            logger.error(f"❌ PPTX转换失败: {task.error}")
-            return APIResponse.error(
-                message=f"PPTX转换失败: {task.error}",
-                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                data=result
-            )
+        logger.info(f"✅ PPTX转换成功: {output_pptx}")
+        return APIResponse.success(
+            data=result,
+            message="PPTX转换成功"
+        )
 
     except Exception as e:
         logger.error(f"PPTX转换异常: {e}")

@@ -9,8 +9,19 @@ from dotenv import load_dotenv
 import os
 
 from ..services.ppt_service import PPTService
-from ..services.conversion_service import ConversionService
 from ..services.file_service import FileService
+
+# 导入HTML2PPTXService
+try:
+    from script.html2pptx import HTML2PPTXService, ServiceConfig
+except ImportError:
+    # 如果导入失败，尝试相对导入
+    import sys
+    from pathlib import Path as PathLib
+    script_dir = PathLib(__file__).parent.parent / "script"
+    if str(script_dir) not in sys.path:
+        sys.path.insert(0, str(script_dir))
+    from html2pptx import HTML2PPTXService, ServiceConfig
 
 # 加载环境变量
 load_dotenv()
@@ -27,24 +38,30 @@ def get_ppt_service() -> PPTService:
 
 
 @lru_cache()
-def get_conversion_service() -> ConversionService:
+def get_html2pptx_service() -> HTML2PPTXService:
     """
-    获取转换服务实例（单例）
+    获取HTML2PPTX服务实例（单例）
 
     Returns:
-        ConversionService实例
+        HTML2PPTXService实例
     """
     # 从环境变量获取API配置
     api_key = os.getenv("DASHSCOPE_API_KEY") or os.getenv("OPENAI_API_KEY")
     api_base = os.getenv("API_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
     model = os.getenv("LLM_MODEL", "deepseek-v3.2-exp")
 
-    return ConversionService(
-        api_key=api_key,
+    # 创建服务配置
+    config = ServiceConfig(
+        api_key=api_key or "",
         api_base_url=api_base,
         model_name=model,
-        enable_llm_fix=True
+        enable_llm_fix=True,
+        skip_failed_files=True,
+        request_interval=1.0,
+        timeout=120
     )
+
+    return HTML2PPTXService(config)
 
 
 @lru_cache()
@@ -60,5 +77,5 @@ def get_file_service() -> FileService:
 
 # 类型别名，用于依赖注入
 PPTServiceDep = Annotated[PPTService, Depends(get_ppt_service)]
-ConversionServiceDep = Annotated[ConversionService, Depends(get_conversion_service)]
+HTML2PPTXServiceDep = Annotated[HTML2PPTXService, Depends(get_html2pptx_service)]
 FileServiceDep = Annotated[FileService, Depends(get_file_service)]
