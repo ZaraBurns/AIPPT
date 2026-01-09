@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 import logging
 import json
 from pathlib import Path
+from .layout_generator import LayoutGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,8 @@ class PageAgent:
         self.css_guide = css_guide
         # 从样式文件加载 page_agent 风格提示，便于统一管理
         self.style_guides = self._load_style_guides()
+        # 初始化布局生成器
+        self.layout_generator = LayoutGenerator()
 
     async def generate_page_html(
             self,
@@ -92,7 +95,7 @@ class PageAgent:
 
         logger.info(f"[PageAgent] {page_spec.slide_number}: {page_spec.title}")
 
-        with open("src/prompt/htmlprompt.txt", "r", encoding="utf-8") as f:
+        with open("src/prompt/htmlprompt_en.txt", "r", encoding="utf-8") as f:
             layout_hints = f.read()
         response = await self.llm_client.chat_completion(
             messages=[
@@ -100,7 +103,7 @@ class PageAgent:
                 {"role": "user", "content": prompt}
             ],
             temperature=0, # 结构化输出稳定
-            max_tokens=4000,
+            max_tokens=5000,
         )
 
         # 清理LLM输出：去除描述性文本和代码块标记
@@ -146,9 +149,26 @@ class PageAgent:
             global_context: GlobalContext,
             content_data: str
     ) -> str:
-        """TODO: Add docstring."""
+        """
+        构建生成HTML的提示词
 
-        # page_type
+        Args:
+            page_spec: 页面规格
+            global_context: 全局上下文
+            content_data: 内容数据
+
+        Returns:
+            完整的提示词字符串
+        """
+
+        # 生成布局指令
+        layout_instruction = self.layout_generator.generate_layout_instruction(
+            page_type=page_spec.page_type,
+            slide_number=page_spec.slide_number,
+            has_chart=page_spec.has_chart,
+            has_image=page_spec.has_image,
+            ppt_id=global_context.ppt_title  # 使用PPT标题作为唯一ID
+        )
 
         # 根据风格加载样式提示（从 ppt_styles.json 的 page_agent 部分）
         style_hint = self.style_guides.get(global_context.style, global_context.style)
@@ -170,9 +190,13 @@ class PageAgent:
 ### 本页信息
 {page_spec}
 
+{layout_instruction}
+
 ### 风格要求
 {style_hint}
 
+### 可用资料：
+{content_data}
 """
 
     def _load_style_guides(self) -> Dict[str, str]:
