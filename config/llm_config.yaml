@@ -42,24 +42,24 @@ default:
 agents:
   # 大纲生成器配置
   outline_generator:
-    provider: "qwen"
-    model_name: "qwen3-max-preview"
+    provider: "deepseek"
+    model_name: "deepseek-chat"
     temperature: 0.9
     max_tokens: 4000
     description: "PPT 大纲生成 - 需要逻辑清晰"
 
   # 内容生成器配置
   content_generator:
-    provider: "qwen"
-    model_name: "qwen3-max-preview"
+    provider: "deepseek"
+    model_name: "deepseek-chat"
     temperature: 0.7
     max_tokens: 4000
     description: "页面内容生成 - 需要稳定输出"
 
   # 设计协调器配置
   design_coordinator:
-    provider: "qwen"
-    model_name: "qwen3-max-preview"
+    provider: "deepseek"
+    model_name: "deepseek-chat"
     temperature: 1
     max_tokens: 2000
     description: "设计规范生成 - 需要创意丰富"
