@@ -95,15 +95,14 @@ class PageAgent:
 
         logger.info(f"[PageAgent] {page_spec.slide_number}: {page_spec.title}")
 
-        with open("src/prompt/htmlprompt_en.txt", "r", encoding="utf-8") as f:
+        with open("src/prompt/htmlprompt.txt", "r", encoding="utf-8") as f:
             layout_hints = f.read()
         response = await self.llm_client.chat_completion(
             messages=[
                 {"role": "system", "content": layout_hints},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0, # 结构化输出稳定
-            max_tokens=5000,
+
         )
 
         # 清理LLM输出：去除描述性文本和代码块标记

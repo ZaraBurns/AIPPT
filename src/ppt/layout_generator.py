@@ -100,11 +100,11 @@ class LayoutGenerator:
                 name="封面页布局",
                 description="居中的标题布局，大标题居中，副标题和关键信息在下方排列",
                 structure_hint="""
-<main class="flex-grow flex flex-col items-center justify-center">
-    <h1 class="text-6xl font-bold text-center">主标题</h1>
-    <div class="w-32 h-1 bg-primary mt-6"></div>
-    <p class="text-2xl text-center mt-8">副标题或关键信息</p>
-    <div class="flex gap-8 mt-12">
+<main data-layout="title-page" class="flex-grow flex flex-col items-center justify-center">
+    <h1 data-role="title" class="text-6xl font-bold text-center">主标题</h1>
+    <div data-role="decoration" class="w-32 h-1 bg-primary mt-6"></div>
+    <p data-role="subtitle" class="text-2xl text-center mt-8">副标题或关键信息</p>
+    <div data-role="metrics" class="flex gap-8 mt-12">
         <div class="text-center">
             <p class="text-4xl font-bold">数据1</p>
             <p class="text-sm">标签1</p>
@@ -127,15 +127,15 @@ class LayoutGenerator:
                 name="目录页布局",
                 description="两栏目录布局，展示章节列表，每项包含序号、标题和简介",
                 structure_hint="""
-<main class="flex-grow flex gap-8">
+<main data-layout="toc-page" class="flex-grow flex gap-8">
     <div class="flex-1 flex flex-col gap-6">
-        <div class="flex items-start gap-4 p-6 rounded-xl">
-            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0">
+        <div data-role="toc-item" class="flex items-start gap-4 p-6 rounded-xl">
+            <div data-role="decoration" class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0">
                 <span class="text-white text-xl font-bold">1</span>
             </div>
             <div>
-                <h3 class="text-2xl font-bold">章节标题</h3>
-                <p class="text-base mt-2">章节简介</p>
+                <h3 data-role="title" class="text-2xl font-bold">章节标题</h3>
+                <p data-role="description" class="text-base mt-2">章节简介</p>
             </div>
         </div>
         <!-- 更多章节... -->
@@ -156,13 +156,13 @@ class LayoutGenerator:
                 name="章节分隔页",
                 description="大标题居中，简短的章节介绍，少量关键点",
                 structure_hint="""
-<main class="flex-grow flex flex-col items-center justify-center">
-    <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-8">
+<main data-layout="section-page" class="flex-grow flex flex-col items-center justify-center">
+    <div data-role="decoration" class="w-20 h-20 rounded-2xl flex items-center justify-center mb-8">
         <span class="text-4xl">图标</span>
     </div>
-    <h1 class="text-6xl font-bold text-center">章节标题</h1>
-    <div class="w-48 h-1 bg-primary mt-6"></div>
-    <p class="text-xl text-center mt-8 max-w-3xl">章节简介</p>
+    <h1 data-role="title" class="text-6xl font-bold text-center">章节标题</h1>
+    <div data-role="decoration" class="w-48 h-1 bg-primary mt-6"></div>
+    <p data-role="description" class="text-xl text-center mt-8 max-w-3xl">章节简介</p>
 </main>
 """,
                 applicable_types=["section"],
@@ -177,19 +177,19 @@ class LayoutGenerator:
                 name="标准两栏布局（左文右图）",
                 description="左侧40%为文字内容区（标题、要点、说明），右侧60%为图表或图片",
                 structure_hint="""
-<main class="flex-grow flex gap-10">
-    <div class="flex-1 flex flex-col gap-6">
-        <h2 class="text-3xl font-bold">标题</h2>
-        <p class="text-lg leading-relaxed">介绍文字</p>
+<main data-layout="two-column-standard" class="flex-grow flex gap-10">
+    <div data-role="text-content" class="flex-1 flex flex-col gap-6">
+        <h2 data-role="title" class="text-3xl font-bold">标题</h2>
+        <p data-role="description" class="text-lg leading-relaxed">介绍文字</p>
         <div class="flex flex-col gap-4">
             <div class="flex items-start gap-3">
-                <div class="w-2 h-2 rounded-full mt-2 flex-shrink-0"></div>
+                <div data-role="decoration" class="w-2 h-2 rounded-full mt-2 flex-shrink-0"></div>
                 <p>要点1</p>
             </div>
             <!-- 更多要点... -->
         </div>
     </div>
-    <div class="flex-1">
+    <div data-role="chart-area" class="flex-1">
         <div class="placeholder h-full">
             <canvas id="chart"></canvas>
         </div>
@@ -207,18 +207,18 @@ class LayoutGenerator:
                 name="反向两栏布局（左图右文）",
                 description="左侧60%为图表或图片，右侧40%为文字内容区（标题、要点、说明）",
                 structure_hint="""
-<main class="flex-grow flex gap-10">
-    <div class="flex-1">
+<main data-layout="two-column-reversed" class="flex-grow flex gap-10">
+    <div data-role="chart-area" class="flex-1">
         <div class="placeholder h-full">
             <canvas id="chart"></canvas>
         </div>
     </div>
-    <div class="flex-1 flex flex-col gap-6">
-        <h2 class="text-3xl font-bold">标题</h2>
-        <p class="text-lg leading-relaxed">介绍文字</p>
+    <div data-role="text-content" class="flex-1 flex flex-col gap-6">
+        <h2 data-role="title" class="text-3xl font-bold">标题</h2>
+        <p data-role="description" class="text-lg leading-relaxed">介绍文字</p>
         <div class="flex flex-col gap-4">
             <div class="flex items-start gap-3">
-                <div class="w-2 h-2 rounded-full mt-2 flex-shrink-0"></div>
+                <div data-role="decoration" class="w-2 h-2 rounded-full mt-2 flex-shrink-0"></div>
                 <p>要点1</p>
             </div>
         </div>
@@ -236,17 +236,17 @@ class LayoutGenerator:
                 name="均衡两栏布局",
                 description="左右各50%，左栏放核心内容和图表，右栏放辅助说明和次要信息",
                 structure_hint="""
-<main class="flex-grow flex gap-10">
-    <div class="flex-1 flex flex-col gap-6">
-        <h2 class="text-3xl font-bold">主要内容</h2>
-        <div class="flex-1">
+<main data-layout="two-column-balanced" class="flex-grow flex gap-10">
+    <div data-role="content-primary" class="flex-1 flex flex-col gap-6">
+        <h2 data-role="title" class="text-3xl font-bold">主要内容</h2>
+        <div data-role="chart-area" class="flex-1">
             <canvas id="chart"></canvas>
         </div>
     </div>
-    <div class="flex-1 flex flex-col gap-6">
-        <h3 class="text-2xl font-bold">补充说明</h3>
-        <p class="text-base">详细说明文字</p>
-        <div class="bg-gray-50 p-4 rounded-lg">
+    <div data-role="content-secondary" class="flex-1 flex flex-col gap-6">
+        <h3 data-role="title" class="text-2xl font-bold">补充说明</h3>
+        <p data-role="description" class="text-base">详细说明文字</p>
+        <div data-role="card" class="bg-gray-50 p-4 rounded-lg">
             <h4 class="font-semibold mb-2">关键数据</h4>
             <p class="text-2xl font-bold">数据值</p>
         </div>
@@ -265,16 +265,16 @@ class LayoutGenerator:
                 name="上下分割布局（上图下文）",
                 description="上方55%为图表或图片，下方45%为文字说明和要点列表",
                 structure_hint="""
-<main class="flex-grow flex flex-col gap-8">
-    <div class="flex-1">
+<main data-layout="vertical-split-top" class="flex-grow flex flex-col gap-8">
+    <div data-role="chart-area" class="flex-1">
         <div class="placeholder h-full">
             <canvas id="chart"></canvas>
         </div>
     </div>
-    <div class="flex-shrink-0">
-        <h2 class="text-3xl font-bold mb-4">数据解读</h2>
+    <div data-role="text-content" class="flex-shrink-0">
+        <h2 data-role="title" class="text-3xl font-bold mb-4">数据解读</h2>
         <div class="grid grid-cols-2 gap-4">
-            <div class="bg-gray-50 p-4 rounded-lg">
+            <div data-role="card" class="bg-gray-50 p-4 rounded-lg">
                 <h4 class="font-semibold">要点1</h4>
                 <p>说明文字</p>
             </div>
@@ -293,18 +293,18 @@ class LayoutGenerator:
                 name="上下分割布局（上文下图）",
                 description="上方45%为标题和文字说明，下方55%为图表或图片",
                 structure_hint="""
-<main class="flex-grow flex flex-col gap-8">
-    <div class="flex-shrink-0">
-        <h2 class="text-4xl font-bold mb-4">标题</h2>
-        <p class="text-xl leading-relaxed">详细介绍文字</p>
+<main data-layout="vertical-split-bottom" class="flex-grow flex flex-col gap-8">
+    <div data-role="text-content" class="flex-shrink-0">
+        <h2 data-role="title" class="text-4xl font-bold mb-4">标题</h2>
+        <p data-role="description" class="text-xl leading-relaxed">详细介绍文字</p>
         <div class="flex gap-6 mt-6">
             <div class="flex items-center gap-2">
-                <div class="w-3 h-3 rounded-full"></div>
+                <div data-role="decoration" class="w-3 h-3 rounded-full"></div>
                 <p>要点1</p>
             </div>
         </div>
     </div>
-    <div class="flex-1">
+    <div data-role="chart-area" class="flex-1">
         <div class="placeholder h-full">
             <canvas id="chart"></canvas>
         </div>
@@ -323,24 +323,24 @@ class LayoutGenerator:
                 name="三栏布局",
                 description="三栏均分，左栏为要点列表，中栏为图表，右栏为补充信息和数据",
                 structure_hint="""
-<main class="flex-grow flex gap-6">
-    <div class="flex-1 flex flex-col gap-4">
-        <h3 class="text-xl font-bold">关键要点</h3>
+<main data-layout="three-column" class="flex-grow flex gap-6">
+    <div data-role="text-content" class="flex-1 flex flex-col gap-4">
+        <h3 data-role="title" class="text-xl font-bold">关键要点</h3>
         <div class="flex flex-col gap-3">
-            <div class="bg-gray-50 p-3 rounded-lg">
+            <div data-role="card" class="bg-gray-50 p-3 rounded-lg">
                 <p class="font-semibold">要点1</p>
                 <p class="text-sm">说明</p>
             </div>
         </div>
     </div>
-    <div class="flex-1">
+    <div data-role="chart-area" class="flex-1">
         <div class="placeholder h-full">
             <canvas id="chart"></canvas>
         </div>
     </div>
-    <div class="flex-1 flex flex-col gap-4">
-        <h3 class="text-xl font-bold">补充信息</h3>
-        <div class="bg-blue-50 p-4 rounded-lg">
+    <div data-role="content-secondary" class="flex-1 flex flex-col gap-4">
+        <h3 data-role="title" class="text-xl font-bold">补充信息</h3>
+        <div data-role="card" class="bg-blue-50 p-4 rounded-lg">
             <p class="text-3xl font-bold">85%</p>
             <p class="text-sm">增长率</p>
         </div>
@@ -358,16 +358,16 @@ class LayoutGenerator:
                 name="2x2卡片网格",
                 description="2x2网格布局，每个卡片包含一个要点、小图标和说明文字",
                 structure_hint="""
-<main class="flex-grow">
+<main data-layout="card-grid-2x2" class="flex-grow">
     <div class="grid grid-cols-2 gap-6 h-full">
-        <div class="bg-gray-50 p-6 rounded-xl">
+        <div data-role="card" class="bg-gray-50 p-6 rounded-xl">
             <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center">
+                <div data-role="decoration" class="w-10 h-10 rounded-lg flex items-center justify-center">
                     <span class="text-xl">图标</span>
                 </div>
-                <h3 class="text-xl font-bold">要点1</h3>
+                <h3 data-role="title" class="text-xl font-bold">要点1</h3>
             </div>
-            <p>说明文字</p>
+            <p data-role="description">说明文字</p>
         </div>
         <!-- 更多卡片... -->
     </div>
@@ -384,11 +384,11 @@ class LayoutGenerator:
                 name="3x2卡片网格",
                 description="3列2行网格布局，适合展示6个相关要点或数据卡片",
                 structure_hint="""
-<main class="flex-grow">
+<main data-layout="card-grid-3x2" class="flex-grow">
     <div class="grid grid-cols-3 gap-4 h-full">
-        <div class="bg-gray-50 p-4 rounded-lg">
-            <p class="text-2xl font-bold">数据</p>
-            <p class="text-sm">说明</p>
+        <div data-role="card" class="bg-gray-50 p-4 rounded-lg">
+            <p data-role="title" class="text-2xl font-bold">数据</p>
+            <p data-role="description" class="text-sm">说明</p>
         </div>
         <!-- 更多卡片... -->
     </div>
@@ -406,16 +406,16 @@ class LayoutGenerator:
                 name="全屏图表布局",
                 description="图表占据80%空间，顶部仅保留标题，底部有简短的1-2行说明",
                 structure_hint="""
-<main class="flex-grow flex flex-col">
-    <div class="flex-shrink-0 mb-4">
-        <h2 class="text-3xl font-bold">标题</h2>
+<main data-layout="full-chart" class="flex-grow flex flex-col">
+    <div data-role="header" class="flex-shrink-0 mb-4">
+        <h2 data-role="title" class="text-3xl font-bold">标题</h2>
     </div>
-    <div class="flex-1">
+    <div data-role="chart-area" class="flex-1">
         <div class="placeholder h-full">
             <canvas id="chart"></canvas>
         </div>
     </div>
-    <div class="flex-shrink-0 mt-4">
+    <div data-role="footer" class="flex-shrink-0 mt-4">
         <p class="text-center text-sm">关键结论说明</p>
     </div>
 </main>
@@ -430,17 +430,17 @@ class LayoutGenerator:
                 name="重点突出布局",
                 description="左侧大卡片突出核心数据或结论（占60%），右侧为支撑信息列表",
                 structure_hint="""
-<main class="flex-grow flex gap-8">
-    <div class="flex-1 bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl">
-        <h3 class="text-lg font-semibold mb-4">核心结论</h3>
-        <p class="text-6xl font-bold mb-4">85%</p>
-        <p class="text-xl">增长率</p>
-        <p class="text-base mt-4">说明文字</p>
+<main data-layout="focus-highlight" class="flex-grow flex gap-8">
+    <div data-role="highlight-card" class="flex-1 bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl">
+        <h3 data-role="title" class="text-lg font-semibold mb-4">核心结论</h3>
+        <p data-role="metric" class="text-6xl font-bold mb-4">85%</p>
+        <p data-role="description" class="text-xl">增长率</p>
+        <p data-role="description" class="text-base mt-4">说明文字</p>
     </div>
-    <div class="flex-1 flex flex-col gap-3">
-        <h4 class="font-semibold">支撑数据</h4>
-        <div class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-            <div class="w-2 h-2 rounded-full"></div>
+    <div data-role="text-content" class="flex-1 flex flex-col gap-3">
+        <h4 data-role="title" class="font-semibold">支撑数据</h4>
+        <div data-role="list-item" class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+            <div data-role="decoration" class="w-2 h-2 rounded-full"></div>
             <p>数据点1</p>
         </div>
     </div>
@@ -456,22 +456,22 @@ class LayoutGenerator:
                 name="对比布局",
                 description="左右对比布局，中间用分隔线，适合展示对比数据或优缺点分析",
                 structure_hint="""
-<main class="flex-grow flex gap-8">
-    <div class="flex-1 p-6 rounded-xl border-2">
-        <h3 class="text-2xl font-bold text-center mb-6">方案A</h3>
+<main data-layout="comparison" class="flex-grow flex gap-8">
+    <div data-role="comparison-panel" class="flex-1 p-6 rounded-xl border-2">
+        <h3 data-role="title" class="text-2xl font-bold text-center mb-6">方案A</h3>
         <div class="flex flex-col gap-4">
-            <div class="flex items-start gap-2">
+            <div data-role="list-item" class="flex items-start gap-2">
                 <span class="text-green-500">✓</span>
                 <p>优点1</p>
             </div>
-            <div class="flex items-start gap-2">
+            <div data-role="list-item" class="flex items-start gap-2">
                 <span class="text-red-500">✗</span>
                 <p>缺点1</p>
             </div>
         </div>
     </div>
-    <div class="flex-1 p-6 rounded-xl border-2">
-        <h3 class="text-2xl font-bold text-center mb-6">方案B</h3>
+    <div data-role="comparison-panel" class="flex-1 p-6 rounded-xl border-2">
+        <h3 data-role="title" class="text-2xl font-bold text-center mb-6">方案B</h3>
         <div class="flex flex-col gap-4">
             <!-- 优缺点... -->
         </div>
@@ -488,22 +488,22 @@ class LayoutGenerator:
                 name="时间线布局",
                 description="横向或纵向时间线，展示发展阶段或里程碑",
                 structure_hint="""
-<main class="flex-grow">
+<main data-layout="timeline" class="flex-grow">
     <div class="flex items-center justify-between gap-4">
-        <div class="flex-1 text-center">
-            <div class="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center">
+        <div data-role="timeline-item" class="flex-1 text-center">
+            <div data-role="decoration" class="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center">
                 <span class="text-white font-bold">1</span>
             </div>
-            <h4 class="font-bold">2020</h4>
-            <p class="text-sm">阶段1</p>
+            <h4 data-role="title" class="font-bold">2020</h4>
+            <p data-role="description" class="text-sm">阶段1</p>
         </div>
-        <div class="flex-shrink-0 w-12 h-0.5 bg-gray-300"></div>
-        <div class="flex-1 text-center">
-            <div class="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center">
+        <div data-role="timeline-connector" class="flex-shrink-0 w-12 h-0.5 bg-gray-300"></div>
+        <div data-role="timeline-item" class="flex-1 text-center">
+            <div data-role="decoration" class="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center">
                 <span class="text-white font-bold">2</span>
             </div>
-            <h4 class="font-bold">2022</h4>
-            <p class="text-sm">阶段2</p>
+            <h4 data-role="title" class="font-bold">2022</h4>
+            <p data-role="description" class="text-sm">阶段2</p>
         </div>
     </div>
 </main>
@@ -518,21 +518,21 @@ class LayoutGenerator:
                 name="列表布局",
                 description="垂直列表布局，每个列表项包含序号、标题、图标和说明",
                 structure_hint="""
-<main class="flex-grow flex gap-8">
-    <div class="flex-1">
+<main data-layout="list-layout" class="flex-grow flex gap-8">
+    <div data-role="text-content" class="flex-1">
         <div class="flex flex-col gap-5">
-            <div class="flex items-start gap-4 p-4 rounded-xl">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+            <div data-role="list-item" class="flex items-start gap-4 p-4 rounded-xl">
+                <div data-role="decoration" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
                     <span class="text-white font-bold">1</span>
                 </div>
                 <div>
-                    <h3 class="text-xl font-bold">项目1</h3>
-                    <p class="text-base mt-1">说明文字</p>
+                    <h3 data-role="title" class="text-xl font-bold">项目1</h3>
+                    <p data-role="description" class="text-base mt-1">说明文字</p>
                 </div>
             </div>
         </div>
     </div>
-    <div class="flex-1">
+    <div data-role="chart-area" class="flex-1">
         <div class="placeholder h-full">
             <canvas id="chart"></canvas>
         </div>

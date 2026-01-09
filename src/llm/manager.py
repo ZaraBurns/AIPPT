@@ -60,6 +60,8 @@ class LLMManager:
             
         except Exception as e:
             logger.error(f": {e}")
+            import traceback
+            traceback.print_exc()  # 打印完整的错误堆栈
             self._create_default_configs()
     
     def _create_config_with_env(self, config_dict: Dict[str, Any]) -> LLMConfig:

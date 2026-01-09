@@ -79,9 +79,6 @@ class DesignCoordinator:
 
         response = await self.llm_client.chat_completion(
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=3000,
-            temperature=1,  # 提高创造性，让LLM更自由地选择配色
-
         )
 
         # 解析LLM返回的JSON

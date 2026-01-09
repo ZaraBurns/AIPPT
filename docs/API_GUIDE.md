@@ -29,14 +29,27 @@
 
 ```bash
 # 进入项目目录
-cd D:\Users\chenmengyue\res3\AIPPT
+cd AIPPT
 
-# 同步依赖
+# 同步 Python 依赖（首次运行或依赖更新时）
 uv sync
 
+# 安装 Node.js 依赖（用于 PPTX 转换功能）
+npm install
+
 # 启动API服务器
-uv run uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
+python start.py
 ```
+
+或使用 `uv run`:
+
+```bash
+uv run start.py
+```
+
+> **注意**：项目依赖说明
+> - `uv sync` - 安装 Python 依赖（FastAPI、uvicorn、LLM SDK 等）
+> - `npm install` - 安装 Node.js 依赖（html2pptx、playwright、pptxgenjs 等转换工具）
 
 ### 2. 访问API文档
 

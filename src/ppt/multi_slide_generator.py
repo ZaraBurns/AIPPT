@@ -36,7 +36,7 @@ class MultiSlidePPTGenerator:
         )
 
         # PPT配置
-        self.slide_size = {"width": 1280, "height": 720}
+        self.slide_size = {"width": 1600, "height": 900}
         self.aspect_ratio = "16:9"
 
         logger.info(f"[MultiSlidePPTGenerator] 初始化完成，模板目录: {self.template_dir}")

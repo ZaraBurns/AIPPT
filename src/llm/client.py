@@ -60,21 +60,21 @@ class LLMClient:
             ]:
                 self._initialize_openai_compatible()
             else:
-                raise ValueError(f"LLM: {self.config.provider}")
+                raise ValueError(f"不支持的LLM提供商:{self.config.provider}")
 
-            logger.info(f"LLM: {self.config.provider} - {self.config.model_name}")
+            logger.info(f"LLM客户端初始化成功: {self.config.provider} - {self.config.model_name}")
 
         except Exception as e:
-            logger.error(f"LLM: {e}")
+            logger.error(f"LLM客户端初始化失败: {e}")
             raise
 
     def _initialize_openai(self):
         """OpenAI"""
         if not OPENAI_AVAILABLE:
-            raise ImportError("openai: pip install openai")
+            raise ImportError("请安装openai库: pip install openai")
 
         if not self.config.api_key:
-            raise ValueError("OpenAI API")
+            raise ValueError("OpenAI API密钥未设置")
 
         self._client = AsyncOpenAI(
             api_key=self.config.api_key,

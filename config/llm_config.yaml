@@ -32,7 +32,7 @@ providers:
 
 # 默认配置
 default:
-  provider: "qwen"  # 默认使用 Qwen
+  provider: "qwen" # 默认使用 Qwen
   model_name: "qwen-turbo"
   temperature: 0.7
   max_tokens: 4000
@@ -42,56 +42,24 @@ default:
 agents:
   # 大纲生成器配置
   outline_generator:
-    provider: "DeepSeek"
-    model_name: "deepseek-chat"
-    temperature: 0.6
-    max_tokens: 3000
+    provider: "qwen"
+    model_name: "qwen3-max-preview"
+    temperature: 0.9
+    max_tokens: 4000
     description: "PPT 大纲生成 - 需要逻辑清晰"
 
   # 内容生成器配置
   content_generator:
-    provider: "DeepSeek"
-    model_name: "deepseek-chat"
-    temperature: 0
-    max_tokens: 6000
-    description: "页面内容生成 - 需要创意丰富"
+    provider: "qwen"
+    model_name: "qwen3-max-preview"
+    temperature: 0.7
+    max_tokens: 4000
+    description: "页面内容生成 - 需要稳定输出"
 
   # 设计协调器配置
   design_coordinator:
-    provider: "DeepSeek"
-    model_name: "deepseek-chat"
-    temperature: 0.5
-    max_tokens: 2000
-    description: "设计规范生成 - 需要稳定输出"
-
-  # 图片搜索关键词生成
-  image_query_generator:
     provider: "qwen"
-    model_name: "qwen-turbo"
-    temperature: 0.7
-    max_tokens: 500
-    description: "图片搜索关键词生成"
-
-# 查询优化器配置
-query_optimizer:
-  provider: "qwen"
-  model_name: "qwen-turbo"
-  temperature: 0.3
-  max_tokens: 2000
-  description: "搜索查询优化"
-
-# 搜索分析器配置
-search_analyzer:
-  provider: "qwen"
-  model_name: "qwen-turbo"
-  temperature: 0.5
-  max_tokens: 4000
-  description: "搜索结果分析"
-
-# 内容合成器配置
-content_synthesizer:
-  provider: "qwen"
-  model_name: "qwen-turbo"
-  temperature: 0.7
-  max_tokens: 6000
-  description: "多源内容合成"
+    model_name: "qwen3-max-preview"
+    temperature: 1
+    max_tokens: 2000
+    description: "设计规范生成 - 需要创意丰富"

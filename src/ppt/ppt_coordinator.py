@@ -117,7 +117,7 @@ class PPTCoordinator:
         self.multi_slide_generator = MultiSlidePPTGenerator(llm_manager, prompt_manager)
 
         # 设计协调器 - 生成全局设计规范
-        llm_client = llm_manager.get_client("outline_generator")
+        llm_client = llm_manager.get_client("design_coordinator")
         self.design_coordinator = DesignCoordinator(llm_client)
 
         # 图片搜索器 - 处理图片占位符
@@ -1483,7 +1483,7 @@ HTML
 """
 
         # PageAgent
-        llm_client = self.llm_manager.get_client("outline_generator")
+        llm_client = self.llm_manager.get_client("content_generator")
         page_agent = PageAgent(llm_client, css_guide)
 
         # 添加信号量限制并发
@@ -1515,7 +1515,7 @@ HTML
         tasks = [generate_with_limit(PageSpec(**page_outline)) for page_outline in outline['pages']]
 
         #
-        logger.info(f"[{self.name}] {len(tasks)}...")
+        logger.info(f"[{self.name}] 并行生成{len(tasks)}个页面...")
 
         # 使用进度显示的方式并行生成
         total = len(tasks)

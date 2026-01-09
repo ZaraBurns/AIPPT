@@ -21,15 +21,15 @@ from openai import OpenAI
 # ==================== 配置区域 ====================
 class CONFIG:
     # 运行模式: 'file' 或 'folder'
-    MODE = 'folder'
+    MODE = 'file'
 
     # 输入路径
-    INPUT_PATH = '../../../../storage/20260105_105735_步行健身进阶计划从日常散步到减脂健走的方法/ppt/slides/'
+    INPUT_PATH = '../../../storage/20260109_142352_旅行创意日记用照片文字手绘记录旅程/reports/ppt/slides/slide_02_content.html'
 
     # 输出路径
     # folder模式：PPTX文件路径
     # file模式：输出文件夹路径
-    OUTPUT_PATH = '../../../../storage/20260105_105735_步行健身进阶计划从日常散步到减脂健走的方法/ppt/slides/output/allput.pptx'
+    OUTPUT_PATH = '../../../../storage/20260105_105735_步行健身进阶计划从日常散步到减脂健走的方法/reports/ppt/slides/output/slide_02_content.pptx'
 
     # 转换参数
     BACKUP_HTML = False  # 是否备份HTML
