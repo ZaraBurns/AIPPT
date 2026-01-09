@@ -132,7 +132,7 @@ class AIPPTGenerator:
         }
 
         # 使用项目目录作为输出目录
-        output_path = project_dir / "reports" / "ppt"
+        output_path = project_dir / "reports"
         output_path.mkdir(parents=True, exist_ok=True)
 
         # 使用 generate_ppt_v3 生成多页HTML PPT

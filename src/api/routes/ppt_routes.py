@@ -12,8 +12,9 @@ from ..schemas.ppt import (
     PPTOutlineResponse,
     PPTGenerateResponse,
     ProjectStatusResponse,
+    GenerateFromOutlineRequest,
 )
-from ..schemas.common import APIResponse
+from ...models.response import APIResponse
 from ..dependencies import PPTServiceDep, HTML2PPTXServiceDep, FileServiceDep
 from loguru import logger
 from pathlib import Path
@@ -41,6 +42,7 @@ async def generate_outline(
     - **topic**: PPT主题（必填）
     - **style**: PPT风格（默认business）
     - **slides**: 幻灯片数量（默认10，范围1-50）
+    - **custom_materials**: 自定义参考资料（可选）
     """
     try:
         logger.info(f"收到大纲生成请求: {request.topic}")
@@ -49,7 +51,8 @@ async def generate_outline(
         result = await ppt_service.generate_outline(
             topic=request.topic,
             style=request.style.value,
-            slides=request.slides
+            slides=request.slides,
+            custom_materials=request.custom_materials
         )
 
         return APIResponse.success(
@@ -76,6 +79,9 @@ async def _convert_html_to_pptx(html_folder: Path, output_pptx: Path, html2pptx_
 
     Returns:
         转换结果字典
+
+    Raises:
+        RuntimeError: 如果转换失败或PPTX文件未生成
     """
     loop = asyncio.get_event_loop()
     stats = await loop.run_in_executor(
@@ -85,12 +91,23 @@ async def _convert_html_to_pptx(html_folder: Path, output_pptx: Path, html2pptx_
         str(output_pptx)
     )
 
+    # 检查转换是否真正成功
+    if stats.success == 0 or not output_pptx.exists():
+        error_msg = f"PPTX转换失败: {stats.failed}个文件处理失败"
+        if stats.failed_files:
+            error_msg += f", 首个错误: {stats.failed_files[0].get('error', 'unknown')}"
+        raise RuntimeError(error_msg)
+
     return {
         "total": stats.total,
-        "success": stats.success,
+        "success_count": stats.success,  # 重命名避免与APIResponse.success冲突
         "failed": stats.failed,
         "elapsed_time": stats.elapsed_time,
-        "total_tokens": stats.total_tokens.total_tokens
+        "total_tokens": {
+            "input_tokens": stats.total_tokens.input_tokens,
+            "output_tokens": stats.total_tokens.output_tokens,
+            "total_tokens": stats.total_tokens.total_tokens
+        }
     }
 
 
@@ -116,7 +133,7 @@ async def generate_ppt(
     - **style**: PPT风格（默认business）
     - **slides**: 幻灯片数量（默认10，范围1-50）
     - **include_speech_notes**: 是否包含演讲稿（默认False）
-    - **custom_search_results**: 自定义搜索结果（可选）
+    - **custom_materials**: 自定义参考资料（可选）
     - **convert_to_pptx**: 是否转换为PPTX（默认True）
     """
     try:
@@ -128,7 +145,7 @@ async def generate_ppt(
             style=request.style.value,
             slides=request.slides,
             include_speech_notes=request.include_speech_notes,
-            custom_search_results=request.custom_search_results
+            custom_materials=request.custom_materials
         )
 
         # 构建响应数据
@@ -306,7 +323,7 @@ async def convert_to_pptx(
 @router.get(
     "/{project_id}/download/{file_type}",
     summary="下载文件",
-    description="下载PPT文件（HTML/PPTX/ZIP）"
+    description="下载PPT文件（HTML/PPTX/ALL）"
 )
 async def download_file(
     project_id: str,
@@ -358,5 +375,89 @@ async def download_file(
         logger.error(f"文件下载失败: {e}")
         return APIResponse.error(
             message=f"文件下载失败: {str(e)}",
+            code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@router.post(
+    "/generate-from-outline",
+    response_model=APIResponse,
+    summary="从大纲生成PPT",
+    description="接受结构化大纲数据，生成HTML和PPTX格式的演示文稿"
+)
+async def generate_from_outline(
+    request: GenerateFromOutlineRequest,
+    ppt_service: PPTServiceDep,
+    html2pptx_service: HTML2PPTXServiceDep = None
+):
+    """
+    从大纲生成PPT
+
+    接受用户提供的大纲数据（outline.json），生成：
+    - HTML版本（可在线演示）
+    - PPTX版本（如果convert_to_pptx=True）
+
+    - **outline**: PPT大纲数据（必填，JSON格式）
+    - **style**: PPT风格（默认business）
+    - **include_speech_notes**: 是否包含演讲稿（默认False）
+    - **convert_to_pptx**: 是否转换为PPTX（默认True）
+    - **custom_materials**: 自定义参考资料（可选）
+    """
+    try:
+        logger.info(f"收到从大纲生成PPT请求: {request.outline.get('title', 'Unknown')}")
+
+        # 调用服务生成PPT
+        project_info = await ppt_service.generate_ppt_from_outline(
+            outline=request.outline,
+            style=request.style.value,
+            include_speech_notes=request.include_speech_notes,
+            convert_to_pptx=False,  # 先不转换，稍后处理
+            custom_materials=request.custom_materials
+        )
+
+        # 构建响应数据
+        result = {
+            "project_id": project_info.project_id,
+            "ppt_dir": project_info.ppt_dir,
+            "total_slides": project_info.total_slides,
+            "index_page": project_info.ppt_dir + "/index.html",
+            "presenter_page": project_info.ppt_dir + "/presenter.html",
+            "pptx_file": None,
+            "status": project_info.status
+        }
+
+        # 如果需要转换PPTX
+        if request.convert_to_pptx and html2pptx_service:
+            logger.info(f"开始自动转换PPTX: {project_info.project_id}")
+
+            try:
+                # 获取项目目录
+                project_dir = ppt_service.get_project_dir(project_info.project_id)
+                html_folder = project_dir / "reports" / "ppt" / "slides"
+                output_pptx = project_dir / "reports" / "ppt" / "output.pptx"
+
+                # 执行转换
+                stats = await _convert_html_to_pptx(html_folder, output_pptx, html2pptx_service)
+
+                result["pptx_file"] = str(output_pptx)
+                result["conversion_stats"] = stats
+                logger.info(f"✅ PPTX自动转换成功: {output_pptx}")
+
+            except Exception as e:
+                result["pptx_error"] = str(e)
+                logger.error(f"PPTX自动转换异常: {e}")
+                # PPTX转换失败不影响整体响应
+        elif request.convert_to_pptx and not html2pptx_service:
+            result["pptx_note"] = "转换服务未初始化"
+
+        return APIResponse.success(
+            data=result,
+            message="PPT生成成功"
+        )
+
+    except Exception as e:
+        logger.error(f"PPT生成失败: {e}")
+        return APIResponse.error(
+            message=f"PPT生成失败: {str(e)}",
             code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

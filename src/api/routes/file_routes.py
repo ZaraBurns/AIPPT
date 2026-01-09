@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, status
 from typing import List
 from loguru import logger
 
-from ..schemas.common import APIResponse
+from ...models.response import APIResponse
 from ..dependencies import FileServiceDep
 
 router = APIRouter()

@@ -208,7 +208,8 @@ class PPTCoordinator:
             topic: str,
             search_results: List[Dict[str, Any]],
             ppt_config: Dict[str, Any],
-            output_dir: Path
+            output_dir: Path,
+            custom_content_summary: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         生成多页HTML PPT (新架构 V3)
@@ -226,6 +227,7 @@ class PPTCoordinator:
                     'theme': 'default/blue/red/green/purple'
                 }
             output_dir: 输出目录
+            custom_content_summary: 自定义内容摘要（联网数据），如果提供则使用此数据而非search_results
 
         Returns:
             {
@@ -248,7 +250,13 @@ class PPTCoordinator:
             # Phase 1: 生成大纲
             logger.info(f"[{self.name}] Phase 1: 生成PPT大纲 (目标{slides_count}页)")
             print(f"\n📋 正在生成PPT大纲... (目标: {slides_count}页)")
-            outline = await self._generate_outline_v2(topic, search_results, style, slides_count)
+            outline = await self._generate_outline_v2(
+                topic,
+                search_results,
+                style,
+                slides_count,
+                custom_content_summary=custom_content_summary
+            )
             print(f"✅ 大纲生成完成！实际生成 {len(outline['pages'])} 页")
 
             # Phase 1.2: 基于大纲搜索图片并将URL嵌入到大纲中 (NEW - 修改策略)
@@ -278,7 +286,8 @@ class PPTCoordinator:
                 search_results=search_results,
                 style=style,
                 speech_scene=None,  # V3不需要演讲稿
-                design_spec=design_spec  # 传递全局设计规范
+                design_spec=design_spec,  # 传递全局设计规范
+                custom_content_summary=custom_content_summary  # 传递自定义联网数据
             )
             # 过滤掉page_results中没有生成内容的页面
             # success_count = sum(1 for r in page_results if r.get('html_content'))
@@ -695,8 +704,7 @@ class PPTCoordinator:
             # 提取搜索结果的基本信息
             title = result.get("title", "")  # 获取标题，默认为空字符串
             content = result.get("content", "")[:800]  # 获取内容前800字符，避免过长
-            url = result.get("url", "")  # 获取URL链接
-
+            url = result.get("url", "")  # 获取URL链接，
             # 按照统一格式组织每个搜索结果
             # 格式：序号+标题 -> URL -> 内容摘要 -> 分隔线
             summary_parts.append(f"""{i}. {title}
@@ -1332,12 +1340,29 @@ HTML
             topic: str,
             search_results: List[Dict[str, Any]],
             style: str,
-            slides: int
+            slides: int,
+            custom_content_summary: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Phase 1: PPT
+        Phase 1: 生成PPT大纲
+
+        Args:
+            topic: PPT主题
+            search_results: 搜索结果列表
+            style: PPT风格
+            slides: 幻灯片数量
+            custom_content_summary: 自定义内容摘要（联网数据），如果提供则使用此数据而非search_results
+
+        Returns:
+            PPT大纲字典
         """
-        content_summary = self._summarize_search_results(search_results)
+        # 如果提供了custom_content_summary，直接使用；否则从search_results生成
+        if custom_content_summary is not None:
+            content_summary = custom_content_summary
+            from loguru import logger
+            logger.info(f"📊 使用自定义联网数据 ({len(content_summary)} 字符)")
+        else:
+            content_summary = self._summarize_search_results(search_results)
         with open("src/prompt/outline_prompt.txt", "r", encoding="utf-8") as f:
             outline_prompt = f.read()
 
@@ -1374,12 +1399,24 @@ HTML
             search_results: List[Dict[str, Any]],
             style: str,
             speech_scene: Optional[str] = None,
-            design_spec: Optional[DesignSpec] = None  # 新增: 全局设计规范
+            design_spec: Optional[DesignSpec] = None,  # 新增: 全局设计规范
+            custom_content_summary: Optional[str] = None  # 新增: 自定义联网数据
     ) -> List[Dict[str, Any]]:
         """
-        Phase 2: HTML
+        Phase 2: HTML页面并行生成
 
-        PageAgent
+        使用PageAgent并行生成每页的HTML内容
+
+        Args:
+            outline: PPT大纲
+            search_results: 搜索结果列表
+            style: PPT风格
+            speech_scene: 演讲场景
+            design_spec: 全局设计规范
+            custom_content_summary: 自定义内容摘要（联网数据），如果提供则使用此数据而非search_results
+
+        Returns:
+            页面生成结果列表
         """
         from .page_agent import PageAgent, PageSpec, GlobalContext
 
@@ -1404,8 +1441,12 @@ HTML
             speech_scene=speech_scene  #
         )
 
-        #
-        content_summary = self._summarize_search_results(search_results)
+        # 如果提供了custom_content_summary，直接使用；否则从search_results生成
+        if custom_content_summary is not None:
+            content_summary = custom_content_summary
+            logger.info(f"📊 使用自定义联网数据生成HTML内容 ({len(content_summary)} 字符)")
+        else:
+            content_summary = self._summarize_search_results(search_results)
 
         # 构建CSS指南 - 如果有design_spec，则包含设计规范信息
         css_guide = self._get_css_component_guide()
@@ -1775,3 +1816,165 @@ HTML
                 "success": False,
                 "error": str(e)
             }
+
+    async def generate_ppt_from_outline(
+        self,
+        outline: Dict[str, Any],
+        ppt_config: Dict[str, Any],
+        output_dir: Path,
+        custom_content_summary: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        基于已有大纲生成PPT（跳过大纲生成步骤）
+
+        Args:
+            outline: 用户提供的结构化大纲
+            ppt_config: PPT配置
+            output_dir: 输出目录
+            custom_content_summary: 自定义内容摘要（联网数据），用于生成HTML内容
+
+        Returns:
+            生成结果字典
+        """
+        logger.info(f"[{self.name}] 基于已有大纲生成PPT")
+        print(f"\n📝 正在基于已有大纲生成PPT...")
+        print(f"   标题: {outline.get('title', 'Unknown')}")
+        print(f"   页数: {len(outline.get('pages', []))}")
+
+        try:
+            style = ppt_config.get('style', 'business')
+            speech_notes = ppt_config.get('speech_notes')
+
+            # 转换speech_notes为speech_scene（布尔值转字符串/None）
+            speech_scene = None
+            if speech_notes is True:
+                speech_scene = "speech"  # 或使用其他适当的字符串
+            # False 或 None 时保持 None
+
+            # Phase 1: 跳过大纲生成，使用用户提供的大纲
+            logger.info(f"[{self.name}] Phase 1: 使用用户提供的大纲")
+
+            # Phase 1.2: 如果大纲中没有图片数据，则搜索图片
+            image_count = 0
+            if not any('image_data' in page for page in outline.get('pages', [])):
+                logger.info(f"[{self.name}] Phase 1.2: 搜索图片并嵌入到大纲")
+                print(f"\n🔍 正在搜索图片...")
+                image_count = await self._search_and_record_images(outline)
+                print(f"✅ 图片搜索完成！嵌入 {image_count} 张图片")
+            else:
+                # 统计已有的图片
+                image_count = sum(
+                    1 for page in outline.get('pages', [])
+                    for img in (page.get('image_data', []) if isinstance(page.get('image_data'), list) else [])
+                    if img.get('success', False)
+                )
+                print(f"✅ 大纲已包含 {image_count} 张图片")
+
+            # Phase 1.5: 生成全局设计规范
+            logger.info(f"[{self.name}] Phase 1.5: 生成全局设计规范")
+            print(f"\n🎨 正在生成全局设计规范...")
+            design_spec = await self.design_coordinator.generate_design_spec(
+                topic=outline.get('title', 'Untitled'),
+                outline=outline,
+                style=style
+            )
+            logger.info(f"[{self.name}] 设计规范: {design_spec.layout_style}风格, 主色{design_spec.primary_color}")
+            print(f"✅ 设计规范生成完成！风格: {design_spec.layout_style}, 主色: {design_spec.primary_color}")
+
+            # Phase 2: 生成页面HTML
+            logger.info(f"[{self.name}] Phase 2: 生成每页详细内容 ({len(outline.get('pages', []))} 页)")
+            print(f"\n📄 正在并行生成 {len(outline.get('pages', []))} 页内容...")
+            print(f"   提示: 大模型正在思考中，这可能需要几分钟时间...")
+
+            page_results = await self._parallel_generate_pages(
+                outline=outline,
+                search_results=[],  # 从大纲生成时不需要搜索结果
+                style=style,
+                speech_scene=speech_scene,  # 使用转换后的speech_scene
+                design_spec=design_spec,
+                custom_content_summary=custom_content_summary  # 传递自定义联网数据
+            )
+
+            success_count = sum(1 for r in page_results if r.get('html_content'))
+            print(f"✅ 页面内容生成完成！成功: {success_count}/{len(outline.get('pages', []))} 页")
+
+            # Phase 3: 将页面内容转换为幻灯片数据结构
+            logger.info(f"[{self.name}] Phase 3: 构建幻灯片数据")
+            print(f"\n🔧 正在构建幻灯片数据结构...")
+            slides_data = self._convert_pages_to_slides_data(outline, page_results)
+            print(f"✅ 数据结构构建完成！")
+
+            # Phase 4: 使用MultiSlidePPTGenerator生成多页HTML PPT文件
+            logger.info(f"[{self.name}] Phase 4: 生成多页HTML文件")
+            print(f"\n📦 正在生成多页HTML文件和导航页面...")
+            result = await self.multi_slide_generator.generate_ppt(
+                slides_data=slides_data,
+                ppt_config={
+                    'ppt_title': outline['title'],
+                    'subtitle': outline.get('subtitle', ''),
+                    'colors': outline['colors'],
+                    'style': style,
+                    'theme': design_spec.primary_color,
+                    'author': 'XunLong AI',
+                    'date': datetime.now().strftime('%Y-%m-%d')
+                },
+                output_dir=output_dir,
+                outline=outline  # 保存大纲
+            )
+
+            # 添加outline和图片搜索记录
+            result['ppt_outline'] = outline
+
+            logger.info(f"[{self.name}] PPT生成完成")
+            print(f"\n🎉 生成成功！")
+            print(f"   📁 PPT目录: {result.get('ppt_dir')}")
+            print(f"   📄 总页数: {result.get('total_slides')}")
+            print(f"   🖼️ 嵌入图片: {image_count} 张")
+            print(f"   🏠 导航页: {result.get('index_page')}")
+            print(f"   🎬 演示页: {result.get('presenter_page')}")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"[{self.name}] 基于大纲生成PPT失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "status": "error",
+                "error": str(e)
+            }
+
+    def _convert_pages_to_slides_data(
+        self,
+        outline: Dict[str, Any],
+        page_results: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        将页面结果转换为幻灯片数据
+
+        Args:
+            outline: PPT大纲
+            page_results: 页面生成结果
+
+        Returns:
+            幻灯片数据列表
+        """
+        slides_data = []
+
+        for i, (page_outline, page_result) in enumerate(zip(outline.get('pages', []), page_results)):
+            slide_data = {
+                'slide_number': page_outline.get('slide_number', i + 1),
+                'page_type': page_outline.get('page_type', 'content'),
+                'title': page_outline.get('title', ''),
+                'html_content': page_result.get('html_content', ''),
+                'key_points': page_outline.get('key_points', []),
+                'has_chart': page_outline.get('has_chart', False),
+                'chart_config': page_outline.get('chart_config'),
+                'has_image': page_outline.get('has_image', False),
+                'image_config': page_outline.get('image_config'),
+                'image_data': page_outline.get('image_data', []),
+                'description': page_outline.get('description', '')
+            }
+            slides_data.append(slide_data)
+
+        return slides_data

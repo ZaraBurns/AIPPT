@@ -562,6 +562,22 @@ class HTML2PPTXService:
 
         if not merge_success:
             self._notify_progress('merge_failed', {})
+            stats.elapsed_time = time.time() - start_time
+            # 合并失败时，标记为失败，即使单个文件处理成功
+            stats.failed = stats.total
+            stats.success = 0
+            return stats
+
+        # 验证最终PPTX文件是否真的生成
+        if not output_path.exists():
+            self._notify_progress('pptx_not_found', {
+                'expected_path': str(output_path)
+            })
+            stats.elapsed_time = time.time() - start_time
+            # 文件未生成，标记为失败
+            stats.failed = stats.total
+            stats.success = 0
+            return stats
 
         stats.elapsed_time = time.time() - start_time
 

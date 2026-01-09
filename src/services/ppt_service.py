@@ -47,11 +47,49 @@ class PPTService:
 
         logger.info("✅ PPT服务初始化完成")
 
+    def _process_custom_materials(self, custom_materials: Optional[str]) -> str:
+        """
+        处理自定义参考资料
+
+        将外部传入的参考资料转换为可用于LLM提示词的格式。
+        支持文档解析结果、用户整理的资料、联网搜索结果等。
+        进行长度限制以避免提示词过长。
+
+        Args:
+            custom_materials: 自定义参考资料（字符串或JSON字符串）
+
+        Returns:
+            str: 处理后的参考资料字符串
+        """
+        if not custom_materials:
+            return ""
+
+        # 如果数据已经是字符串，直接使用
+        if isinstance(custom_materials, str):
+            data_str = custom_materials
+        else:
+            # 如果是其他类型（如字典），转换为JSON字符串
+            import json
+            try:
+                data_str = json.dumps(custom_materials, ensure_ascii=False)
+            except Exception as e:
+                logger.warning(f"⚠️  无法转换custom_materials为JSON: {e}")
+                return str(custom_materials)
+
+        # 限制长度，避免提示词过长（最大8000字符）
+        max_length = 8000
+        if len(data_str) > max_length:
+            logger.warning(f"⚠️  custom_materials过长({len(data_str)}字符)，截断至{max_length}字符")
+            data_str = data_str[:max_length] + "...[内容过长已截断]"
+
+        return data_str
+
     async def generate_outline(
         self,
         topic: str,
         style: str = "business",
-        slides: int = 10
+        slides: int = 10,
+        custom_materials: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         生成PPT大纲
@@ -60,11 +98,15 @@ class PPTService:
             topic: PPT主题
             style: PPT风格
             slides: 幻灯片数量
+            custom_materials: 自定义参考资料（文档解析、用户整理的资料、联网搜索结果等），最大10000字符
 
         Returns:
             大纲数据字典
         """
         logger.info(f"📝 生成PPT大纲: {topic}")
+
+        # 处理custom_materials
+        custom_content_summary = self._process_custom_materials(custom_materials)
 
         try:
             # 调用PPTCoordinator生成大纲
@@ -72,7 +114,8 @@ class PPTService:
                 topic=topic,
                 search_results=[],
                 style=style,
-                slides=slides
+                slides=slides,
+                custom_content_summary=custom_content_summary if custom_content_summary else None
             )
 
             # 返回结果
@@ -95,7 +138,7 @@ class PPTService:
         style: str = "business",
         slides: int = 10,
         include_speech_notes: bool = False,
-        custom_search_results: Optional[List[Dict]] = None
+        custom_materials: Optional[str] = None
     ) -> PPTProjectInfo:
         """
         生成完整PPT（HTML格式）
@@ -105,26 +148,24 @@ class PPTService:
             style: PPT风格
             slides: 幻灯片数量
             include_speech_notes: 是否包含演讲稿
-            custom_search_results: 自定义搜索结果
+            custom_materials: 自定义参考资料（文档解析、用户整理的资料、联网搜索结果等），最大10000字符
 
         Returns:
             PPT项目信息
         """
         logger.info(f"📝 生成PPT: {topic}")
 
+        # 处理custom_materials
+        custom_content_summary = self._process_custom_materials(custom_materials)
+
         # 创建项目目录
         project_id = self.storage.create_project(topic)
         project_dir = self.storage.get_project_dir()
         logger.info(f"📁 项目ID: {project_id}")
 
-        # 准备搜索结果
-        search_results = []
-        if custom_search_results:
-            logger.info(f"📊 使用自定义搜索结果 ({len(custom_search_results)} 条)")
-            search_results = custom_search_results
-            # 保存搜索结果
-            if search_results:
-                self.storage.save_search_results({"all_content": search_results})
+        # 如果有自定义资料，记录日志
+        if custom_content_summary:
+            logger.info(f"📊 使用自定义参考资料 ({len(custom_content_summary)} 字符)")
 
         # PPT配置
         ppt_config = {
@@ -134,16 +175,17 @@ class PPTService:
         }
 
         # 创建输出目录
-        output_path = project_dir / "reports" / "ppt"
+        output_path = project_dir / "reports"
         output_path.mkdir(parents=True, exist_ok=True)
 
         try:
             # 生成HTML PPT
             result = await self.ppt_coordinator.generate_ppt_v3(
                 topic=topic,
-                search_results=search_results,
+                search_results=[],  # 不使用传统搜索结果
                 ppt_config=ppt_config,
-                output_dir=output_path
+                output_dir=output_path,
+                custom_content_summary=custom_content_summary if custom_content_summary else None
             )
 
             # 检查生成结果
@@ -287,3 +329,98 @@ class PPTService:
             return project_dir
 
         return None
+
+    async def generate_ppt_from_outline(
+        self,
+        outline: Dict[str, Any],
+        style: str = "business",
+        include_speech_notes: bool = False,
+        convert_to_pptx: bool = True,
+        custom_materials: Optional[str] = None
+    ) -> PPTProjectInfo:
+        """
+        从已有大纲生成PPT
+
+        Args:
+            outline: PPT大纲数据（JSON格式）
+            style: PPT风格
+            include_speech_notes: 是否包含演讲稿
+            convert_to_pptx: 是否转换为PPTX
+            custom_materials: 自定义参考资料（文档解析、用户整理的资料、联网搜索结果等），最大10000字符
+
+        Returns:
+            PPT项目信息
+        """
+        logger.info(f"📝 从大纲生成PPT: {outline.get('title', 'Unknown')}")
+
+        # 处理custom_materials
+        custom_content_summary = self._process_custom_materials(custom_materials)
+
+        # 1. 提取标题并创建项目
+        title = outline.get("title", "Untitled")
+        project_id = self.storage.create_project(title)
+        project_dir = self.storage.get_project_dir()
+        logger.info(f"📁 项目ID: {project_id}")
+
+        # 2. 创建输出目录
+        output_path = project_dir / "reports"
+        output_path.mkdir(parents=True, exist_ok=True)
+
+        # 3. 保存大纲到文件
+        outline_path = output_path / "ppt" / "data" / "outline.json"
+        outline_path.parent.mkdir(parents=True, exist_ok=True)
+        import json
+        with open(outline_path, 'w', encoding='utf-8') as f:
+            json.dump(outline, f, ensure_ascii=False, indent=2)
+        logger.info(f"💾 大纲已保存: {outline_path}")
+
+        try:
+            # 4. 调用PPTCoordinator从大纲生成
+            ppt_config = {
+                "style": style,
+                "slides": len(outline.get("pages", [])),
+                "speech_notes": include_speech_notes
+            }
+
+            result = await self.ppt_coordinator.generate_ppt_from_outline(
+                outline=outline,
+                ppt_config=ppt_config,
+                output_dir=output_path,
+                custom_content_summary=custom_content_summary if custom_content_summary else None
+            )
+
+            # 5. 检查生成结果
+            if result.get("status") != "success":
+                error_msg = result.get("error", "未知错误")
+                logger.error(f"❌ PPT生成失败: {error_msg}")
+                raise Exception(error_msg)
+
+            # 6. 构建项目信息
+            project_info = PPTProjectInfo(
+                project_id=project_id,
+                topic=title,
+                status="completed",
+                created_at=self.storage.load_metadata().get("created_at"),
+                ppt_dir=str(result.get("ppt_dir", "")),
+                total_slides=result.get("total_slides", 0),
+                pptx_file=None
+            )
+
+            # 7. 保存到存储
+            self._save_ppt_to_storage(result, title, project_dir)
+
+            logger.info(f"✅ PPT生成成功: {project_id}")
+            logger.info(f"   📄 总页数: {result.get('total_slides')}")
+            logger.info(f"   🏠 导航页: {result.get('index_page')}")
+
+            return project_info
+
+        except Exception as e:
+            logger.error(f"❌ PPT生成异常: {e}")
+            # 更新项目状态为失败
+            metadata = self.storage.load_metadata()
+            if metadata:
+                metadata["status"] = "failed"
+                metadata["error"] = str(e)
+                self.storage.save_metadata(metadata)
+            raise

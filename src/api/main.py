@@ -2,10 +2,12 @@
 FastAPI应用主入口
 """
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import time
+import os
 from loguru import logger
 
 from .schemas.common import HealthResponse
@@ -91,34 +93,19 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# 注册路由
+# 注册路由（必须在静态文件挂载之前）
 app.include_router(
     ppt_routes.router,
     prefix="/api/v1/ppt",
     tags=["PPT"]
 )
-
 app.include_router(
     file_routes.router,
     prefix="/api/v1/files",
     tags=["Files"]
 )
 
-
-# 根路径
-@app.get("/", tags=["Root"])
-async def root():
-    """根路径"""
-    return {
-        "name": "AIPPT API",
-        "version": "1.0.0",
-        "description": "AI驱动的PowerPoint生成系统",
-        "docs": "/docs",
-        "health": "/health"
-    }
-
-
-# 健康检查
+# 健康检查（必须在静态文件挂载之前）
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
 async def health_check():
     """健康检查接口"""
@@ -129,6 +116,14 @@ async def health_check():
         version="1.0.0",
         uptime=round(uptime, 2)
     )
+
+
+# 挂载前端静态文件（放在最后，作为fallback）
+frontend_dir = "frontend"
+if os.path.exists(frontend_dir):
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+else:
+    logger.warning(f"Frontend directory '{frontend_dir}' not found. UI will not be served.")
 
 
 # 启动说明

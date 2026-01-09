@@ -26,13 +26,19 @@ class PPTOutlineRequest(BaseModel):
     topic: str = Field(..., min_length=1, max_length=200, description="PPT主题")
     style: PPTStyle = Field(default=PPTStyle.BUSINESS, description="PPT风格")
     slides: int = Field(default=10, ge=1, le=50, description="幻灯片数量")
+    custom_materials: Optional[str] = Field(
+        default=None,
+        max_length=10000,
+        description="自定义参考资料，支持文档解析、用户整理的资料、联网搜索结果等，最大10000字符"
+    )
 
     class Config:
         json_schema_extra = {
             "example": {
-                "topic": "人工智能的发展趋势",
-                "style": "business",
-                "slides": 10
+                "topic": "量子计算的技术突破",
+                "style": "tech",
+                "slides": 8,
+                "custom_materials": "最新研究表明，量子计算机在2024年实现了重要突破：1. IBM推出了1000+量子比特处理器；2. Google实现了量子纠错新方法；3. 中国在量子通信领域取得领先优势。"
             }
         }
 
@@ -40,19 +46,16 @@ class PPTOutlineRequest(BaseModel):
 class PPTGenerateRequest(PPTOutlineRequest):
     """PPT生成请求"""
     include_speech_notes: bool = Field(default=False, description="是否包含演讲稿")
-    custom_search_results: Optional[List[Dict]] = Field(
-        default=None,
-        description="自定义搜索结果"
-    )
     convert_to_pptx: bool = Field(default=True, description="是否转换为PPTX")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "topic": "人工智能的发展趋势",
+                "topic": "2024年新能源汽车市场分析",
                 "style": "business",
-                "slides": 10,
+                "slides": 12,
                 "include_speech_notes": False,
+                "custom_materials": "根据中国汽车工业协会数据：1. 2024年新能源汽车销量达到950万辆，同比增长40%；2. 比亚迪、特斯拉、蔚来占据市场份额前三；3. 动力电池成本下降至100元/kWh以下；4. 充电桩数量突破300万台；5. 出口量突破500万辆。",
                 "convert_to_pptx": True
             }
         }
@@ -68,6 +71,62 @@ class ConversionRequest(BaseModel):
             "example": {
                 "enable_llm_fix": True,
                 "skip_failed_files": True
+            }
+        }
+
+
+class GenerateFromOutlineRequest(BaseModel):
+    """从大纲生成PPT请求"""
+    outline: Dict[str, Any] = Field(..., description="PPT大纲数据（JSON格式）")
+    style: PPTStyle = Field(default=PPTStyle.BUSINESS, description="PPT风格")
+    include_speech_notes: bool = Field(default=False, description="是否包含演讲稿")
+    convert_to_pptx: bool = Field(default=True, description="是否转换为PPTX")
+    custom_materials: Optional[str] = Field(
+        default=None,
+        max_length=10000,
+        description="自定义参考资料，支持文档解析、用户整理的资料、联网搜索结果等，最大10000字符"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "outline": {
+                    "title": "2024年全球气候变化报告",
+                    "subtitle": "数据分析与趋势预测",
+                    "colors": {
+                        "primary": "#2d6a4f",
+                        "accent": "#52b788",
+                        "background": "#ffffff",
+                        "text": "#1b4332",
+                        "secondary": "#74c69d"
+                    },
+                    "pages": [
+                        {
+                            "slide_number": 1,
+                            "page_type": "title",
+                            "title": "2024年全球气候变化报告",
+                            "key_points": [],
+                            "has_chart": False,
+                            "has_image": True,
+                            "description": "封面页",
+                            "chart_config": None,
+                            "image_config": [{"type": "photo", "query": "climate change earth"}]
+                        },
+                        {
+                            "slide_number": 2,
+                            "page_type": "content",
+                            "title": "全球气温上升趋势",
+                            "key_points": ["2024年平均气温", "温室气体排放", "极端天气事件"],
+                            "has_chart": True,
+                            "has_image": False,
+                            "description": "展示气温数据和趋势"
+                        }
+                    ]
+                },
+                "style": "academic",
+                "include_speech_notes": False,
+                "convert_to_pptx": True,
+                "custom_materials": "根据NASA和NOAA数据：2024年全球平均气温比工业化前水平上升1.3°C，接近《巴黎协定》1.5°C警戒线。极端天气事件增加20%，包括热浪、干旱和洪水。温室气体浓度达历史新高，CO2浓度突破420ppm。"
             }
         }
 
