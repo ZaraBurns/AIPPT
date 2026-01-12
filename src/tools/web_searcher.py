@@ -1,17 +1,21 @@
 """
 Web搜索工具 - 支持多源搜索（DuckDuckGo + MCP服务）+ 内容抓取
+
+注意: 此模块使用延迟导入,只有在实际使用 WebSearcher 类时才会加载 Playwright 等重量级依赖。
+这样可以避免在不使用搜索功能时占用过多资源。
 """
 import asyncio
 from typing import List, Dict, Any, Optional
 from loguru import logger
-from playwright.async_api import async_playwright
-import base64
-from pathlib import Path
+# Playwright 等重量级依赖移到函数内部导入,避免顶层导入占用资源
+# import base64
+# from pathlib import Path
 
-from ..searcher.duckduckgo import DuckDuckGoSearcher
+# DuckDuckGo 搜索器也使用延迟导入
+# from ..searcher.duckduckgo import DuckDuckGoSearcher
 # from mcp.mcp_manager import get_mcp_manager  # MCP暂时禁用
-from ..utils.image_processor import ImageProcessor
-from ..tools.image_downloader import ImageDownloader
+# from ..utils.image_processor import ImageProcessor
+# from ..tools.image_downloader import ImageDownloader
 
 class WebSearcher:
     """Web搜索器 - 支持MCP搜索 + 浏览器内容抓取"""
@@ -37,6 +41,9 @@ class WebSearcher:
                 - "distribute": 均匀分布在段落之间
                 - "none": 不插入
         """
+        # 延迟导入依赖
+        from ..searcher.duckduckgo import DuckDuckGoSearcher
+
         self.duckduckgo_searcher = DuckDuckGoSearcher()
         # TODO: MCP功能暂时禁用，待后续优化
         # self.mcp_manager = get_mcp_manager()
@@ -49,6 +56,7 @@ class WebSearcher:
 
         # 初始化图片下载器
         if extract_images:
+            from ..tools.image_downloader import ImageDownloader
             self.image_downloader = ImageDownloader()
         else:
             self.image_downloader = None
@@ -185,6 +193,9 @@ class WebSearcher:
             # 设置搜索结果数量
             self.duckduckgo_searcher.topk = max_results
 
+            # 延迟导入 Playwright
+            from playwright.async_api import async_playwright
+
             # 使用Playwright启动浏览器进行搜索
             async with async_playwright() as p:
                 # 启动浏览器 - 使用有头模式
@@ -244,6 +255,9 @@ class WebSearcher:
         Returns:
             增强后的搜索结果（包含完整内容）
         """
+        # 延迟导入 Playwright
+        from playwright.async_api import async_playwright
+
         async with async_playwright() as p:
             # 启动浏览器
             browser = await p.chromium.launch(

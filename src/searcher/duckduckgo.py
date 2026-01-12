@@ -1,10 +1,13 @@
 """DuckDuckGo搜索器 - 基于Playwright的网页搜索实现"""
 
 import asyncio
-from typing import List, Optional
-from playwright.async_api import Page
+from typing import List, Optional, TYPE_CHECKING
 from loguru import logger
 from urllib.parse import quote_plus
+
+# 使用 TYPE_CHECKING 避免顶层导入 Playwright
+if TYPE_CHECKING:
+    from playwright.async_api import Page
 
 from .base import BaseSearcher
 from ..models.search import SearchLink
@@ -19,7 +22,7 @@ class DuckDuckGoSearcher(BaseSearcher):
     
     async def search(
         self,
-        page: Page,
+        page: "Page",  # 使用字符串类型注解,避免顶层导入
         query: str,
         time_filter: Optional[str] = None,
         region: str = "cn-zh"

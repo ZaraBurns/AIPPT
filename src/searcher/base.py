@@ -1,8 +1,11 @@
-"""TODO: Add docstring."""
+"""搜索器基类 - 延迟导入 Playwright 避免不必要的资源占用"""
 
 from abc import ABC, abstractmethod
-from typing import List
-from playwright.async_api import Page
+from typing import List, TYPE_CHECKING
+
+# 使用 TYPE_CHECKING 避免顶层导入 Playwright
+if TYPE_CHECKING:
+    from playwright.async_api import Page
 
 from ..models.search import SearchLink
 
@@ -14,16 +17,16 @@ class BaseSearcher(ABC):
         self.topk = topk
     
     @abstractmethod
-    async def search(self, page: Page, query: str) -> List[SearchLink]:
+    async def search(self, page: "Page", query: str) -> List[SearchLink]:
         """
-        
-        
+        搜索方法(子类必须实现)
+
         Args:
-            page: Playwright
-            query: 
-            
+            page: Playwright 页面对象
+            query: 搜索查询词
+
         Returns:
-            
+            搜索结果列表
         """
         pass
     

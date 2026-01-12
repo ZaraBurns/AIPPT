@@ -4,15 +4,19 @@
 # ============================================
 # 阶段1: Node.js 环境（用于PPTX转换）
 # ============================================
-FROM node:18-alpine AS node-builder
+FROM node:18-bookworm-slim AS node-builder
 
 WORKDIR /app
 
-# 安装Node.js依赖
-COPY src/services/script/package*.json src/services/script/
-COPY src/services/script/*.js src/services/script/
+# 安装Node.js依赖（注意：package.json/package-lock.json 位于项目根目录）
+COPY package.json package-lock.json ./
 
-RUN npm ci --production
+# 安装Node.js依赖（生产依赖）
+RUN npm ci --omit=dev
+
+# 复制脚本代码（保持与项目路径一致）
+RUN mkdir -p /app/src/services/script
+COPY src/services/script/*.js /app/src/services/script/
 
 # 安装Playwright浏览器（用于图表截取）
 RUN npx playwright install-deps chromium
@@ -52,7 +56,8 @@ COPY src/ ./src/
 COPY start.py ./
 
 # 从node-builder阶段复制Node.js环境
-COPY --from=node-builder /app/src/services/script/node_modules ./src/services/script/node_modules
+# node_modules 实际安装在 /app/node_modules（因为 npm ci 在 /app 下执行）
+COPY --from=node-builder /app/node_modules ./node_modules
 COPY --from=node-builder /app/src/services/script/*.js ./src/services/script/
 
 # 安装Python依赖
@@ -62,11 +67,11 @@ RUN uv sync --frozen --no-dev
 RUN mkdir -p storage
 
 # 暴露端口
-EXPOSE 8000
+EXPOSE 10828
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health')"
+    CMD python -c "import requests; requests.get('http://localhost:10828/health')"
 
 # 启动命令
 CMD ["uv", "run", "start.py"]
