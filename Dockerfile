@@ -1,5 +1,5 @@
-# AIPPT Dockerfile
-# 多阶段构建，优化镜像大小
+# AIPPT Dockerfile - 国内网络优化版
+# 针对国内服务器优化,加速构建过程
 
 # ============================================
 # 阶段1: Node.js 环境（用于PPTX转换）
@@ -7,6 +7,9 @@
 FROM node:18-bookworm-slim AS node-builder
 
 WORKDIR /app
+
+# 配置 npm 使用国内镜像
+RUN npm config set registry https://registry.npmmirror.com
 
 # 安装Node.js依赖（注意：package.json/package-lock.json 位于项目根目录）
 COPY package.json package-lock.json ./
@@ -18,9 +21,10 @@ RUN npm ci --omit=dev
 RUN mkdir -p /app/src/services/script
 COPY src/services/script/*.js /app/src/services/script/
 
-# 安装Playwright浏览器（用于图表截取）
-RUN npx playwright install-deps chromium
-RUN npx playwright install chromium
+# 配置 Playwright 使用国内镜像并安装浏览器
+ENV PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright/
+RUN npx playwright install-deps chromium && \
+    npx playwright install chromium
 
 
 # ============================================
@@ -37,6 +41,10 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
+# 配置 apt 使用阿里云镜像(国内加速)
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources
+
 # 安装系统依赖
 RUN apt-get update && apt-get install -y \
     gcc \
@@ -45,6 +53,9 @@ RUN apt-get update && apt-get install -y \
     curl \
     git \
     && rm -rf /var/lib/apt/lists/*
+
+# 配置 pip 使用国内镜像
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 安装uv包管理器
 RUN pip install --no-cache-dir uv
