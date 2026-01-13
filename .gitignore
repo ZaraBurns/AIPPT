@@ -55,7 +55,7 @@ env/
 # 项目输出目录
 # ===========================
 output/
-storage/
+/storage/
 *.pptx
 *.html
 !templates/**/*.html
