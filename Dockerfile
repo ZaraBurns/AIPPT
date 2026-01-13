@@ -46,13 +46,25 @@ RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debia
     sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources
 
 # 安装系统依赖
+# 注意：Node.js从builder阶段复制，但这里需要安装浏览器运行所需的Linux系统库(libnss3等)
+# 否则 npx playwright 或 html2pptx 会报错
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     make \
     curl \
     git \
+    libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+    libgbm1 libasound2 libpango-1.0-0 libcairo2 \
     && rm -rf /var/lib/apt/lists/*
+
+# 从 node-builder 复制 Node.js 二进制文件和库（核心优化：无需再次下载安装Node）
+COPY --from=node-builder /usr/local/bin/node /usr/local/bin/
+COPY --from=node-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
+# 创建软链确保 npm/npx 可用
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # 配置 pip 使用国内镜像
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
