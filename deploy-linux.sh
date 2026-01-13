@@ -75,6 +75,7 @@ docker run -d \
     --name ${CONTAINER_NAME} \
     --network ${NETWORK_NAME} \
     -p ${PORT}:${PORT} \
+    --env-file .env \
     -v $(pwd)/storage:/app/storage \
     -v $(pwd)/config:/app/config \
     --restart unless-stopped \

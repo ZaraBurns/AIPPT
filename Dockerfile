@@ -4,7 +4,7 @@
 # ============================================
 # 阶段1: Node.js 环境（用于PPTX转换）
 # ============================================
-FROM node:18-bookworm-slim AS node-builder
+FROM node:20-bookworm-slim AS node-builder
 
 WORKDIR /app
 
@@ -79,8 +79,9 @@ COPY src/ ./src/
 COPY start.py ./
 
 # 从node-builder阶段复制Node.js环境
-# node_modules 实际安装在 /app/node_modules（因为 npm ci 在 /app 下执行）
-COPY --from=node-builder /app/node_modules ./node_modules
+# 核心修改：将 node_modules 直接复制到脚本目录，避免路径错误
+# 原先的 COPY ... ./node_modules 只能复制到 /app/node_modules，脚本找不到
+COPY --from=node-builder /app/node_modules ./src/services/script/node_modules
 COPY --from=node-builder /app/src/services/script/*.js ./src/services/script/
 
 # 安装Python依赖
