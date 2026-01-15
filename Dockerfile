@@ -23,6 +23,8 @@ COPY src/services/script/*.js /app/src/services/script/
 
 # 配置 Playwright 使用国内镜像并安装浏览器
 ENV PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright/
+# 核心修改：明确 Playwright 浏览器下载位置，方便第二阶段复制
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN npx playwright install-deps chromium && \
     npx playwright install chromium
 
@@ -54,6 +56,8 @@ RUN apt-get update && apt-get install -y \
     make \
     curl \
     git \
+    # 字体支持: 解决图表中文乱码
+    fonts-noto-cjk fonts-wqy-zenhei \
     libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
     libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
     libgbm1 libasound2 libpango-1.0-0 libcairo2 \
@@ -62,6 +66,11 @@ RUN apt-get update && apt-get install -y \
 # 从 node-builder 复制 Node.js 二进制文件和库（核心优化：无需再次下载安装Node）
 COPY --from=node-builder /usr/local/bin/node /usr/local/bin/
 COPY --from=node-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
+# 核心修改：复制 Playwright 下载的浏览器二进制文件
+# 这是一个巨大的文件夹，必须显式复制，否则第二阶段没有浏览器可用
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+COPY --from=node-builder /ms-playwright /ms-playwright
+
 # 创建软链确保 npm/npx 可用
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
     ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
